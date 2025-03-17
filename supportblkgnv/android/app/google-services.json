@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "578319808659",
+    "project_id": "supportblkgnv",
+    "storage_bucket": "supportblkgnv.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:578319808659:android:8cc4c18e67c330ece27566",
+        "android_client_info": {
+          "package_name": "com.example.supportblkgnv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpgJTdDaHp6NLqbVSAZJOmrK7xEcs6d-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
