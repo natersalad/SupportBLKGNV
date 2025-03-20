@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'environment.dart';
+import 'theme.dart';
+import 'screens/profile.dart';
 
 Future main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: Environment.fileName);
   await Firebase.initializeApp();
   runApp(const MyApp());
@@ -16,86 +18,93 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'SupportBLKGNV',
+      theme: appTheme,
+      home: const MainScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
 
-  Future<void> _addTestData() async {
-    await FirebaseFirestore.instance.collection('test').doc('demo').set({
-      'title': 'Hello World',
-      'body': 'This is a demo',
-    });
-    debugPrint("Data Added!");
-  }
+  static final List<Widget> _screens = <Widget>[
+    const SignInScreen(),
+    const HomeScreen(),
+    const CommunityScreen(),
+    const ProfilePage(),
+  ];
 
-  Future<void> _readTestData() async {
-    DocumentSnapshot doc =
-        await FirebaseFirestore.instance.collection('test').doc('demo').get();
-
-    final data = doc.data();
-    if (data != null) {
-      debugPrint("Data: $data");
-    } else {
-      debugPrint("No Data Found!");
-    }
-  }
-
-  void _incrementCounter() {
+  void _onItemTapped(int index) {
     setState(() {
-      _counter++;
+      _selectedIndex = index;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.login), label: 'Sign In'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Community'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'Firebase Enviroment Key: ${Environment.firebaseAppIdAndroid}',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            ElevatedButton(
-              onPressed: _addTestData,
-              child: const Text('Add Data'),
-            ),
-            ElevatedButton(
-              onPressed: _readTestData,
-              child: const Text('Read Data'),
-            ),
-          ],
-        ),
+    );
+  }
+}
+
+class SignInScreen extends StatelessWidget {
+  const SignInScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('Nico work', style: TextStyle(fontSize: 24)),
+          Text(
+            'temporarily on nav bar for development',
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Jeff work', style: TextStyle(fontSize: 24)),
+    );
+  }
+}
+
+class CommunityScreen extends StatelessWidget {
+  const CommunityScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Nico & Jeff work', style: TextStyle(fontSize: 24)),
     );
   }
 }
