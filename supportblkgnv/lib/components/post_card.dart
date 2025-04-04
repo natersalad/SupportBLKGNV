@@ -57,7 +57,7 @@ class _PostCardState extends State<PostCard> {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundImage: NetworkImage(widget.post.author.imageUrl),
+                  backgroundImage: NetworkImage(widget.post.author.imageUrl ?? 'https://via.placeholder.com/40'),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -228,7 +228,7 @@ class _PostCardState extends State<PostCard> {
                             child: CircleAvatar(
                               radius: 10,
                               backgroundImage: NetworkImage(
-                                widget.post.likes[i].imageUrl,
+                                widget.post.likes[i].imageUrl ?? 'https://via.placeholder.com/40',
                               ),
                             ),
                           ),
@@ -315,7 +315,7 @@ class _PostCardState extends State<PostCard> {
         children: [
           CircleAvatar(
             radius: 16,
-            backgroundImage: NetworkImage(comment.user.imageUrl),
+            backgroundImage: NetworkImage(comment.user.imageUrl ?? 'https://via.placeholder.com/40'),
           ),
           const SizedBox(width: 8),
           Expanded(

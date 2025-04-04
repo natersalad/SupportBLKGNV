@@ -6,6 +6,7 @@ import 'environment.dart';
 import 'theme.dart';
 import 'screens/profile.dart';
 import 'screens/home.dart';
+import 'screens/community_screen.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -97,17 +98,6 @@ class SignInScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class CommunityScreen extends StatelessWidget {
-  const CommunityScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Nico & Jeff work', style: TextStyle(fontSize: 24)),
     );
   }
 }
