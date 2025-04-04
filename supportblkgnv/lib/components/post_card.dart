@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:supportblkgnv/models/post.dart';
 import 'package:supportblkgnv/models/user.dart';
 import 'package:supportblkgnv/theme.dart';
 import 'package:supportblkgnv/utils/date_formatter.dart';
+import 'package:supportblkgnv/services/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:supportblkgnv/providers/auth_provider.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
+  final Function(Post)? onPostUpdated;
 
   const PostCard({
     Key? key,
     required this.post,
+    this.onPostUpdated,
   }) : super(key: key);
 
   @override
@@ -17,8 +23,157 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
+  final PostService _postService = PostService();
   bool _isLiked = false;
   bool _showComments = false;
+  bool _isLiking = false;
+  late List<User> _likes;
+  String _commentText = '';
+  bool _isAddingComment = false;
+  late TextEditingController _commentController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _commentController = TextEditingController();
+    _likes = List.from(widget.post.likes);
+    
+    // Check if current user has liked the post
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserInfo = authProvider.currentUserInfo;
+    
+    if (currentUserInfo != null) {
+      final String uid = currentUserInfo['uid'];
+      _isLiked = _likes.any((user) => user.id == uid);
+    }
+  }
+  
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  // Like/unlike post
+  Future<void> _toggleLike() async {
+    if (_isLiking) return;
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserInfo = authProvider.currentUserInfo;
+    
+    if (currentUserInfo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You need to be logged in to like posts'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    setState(() => _isLiking = true);
+    
+    try {
+      // Get current user
+      final String uid = currentUserInfo['uid'];
+      final String name = currentUserInfo['displayName'] ?? 'User';
+      
+      // Create a temporary user object
+      final currentUser = User(
+        id: uid,
+        name: name,
+        imageUrl: currentUserInfo['photoURL'],
+        bio: '',
+        accountType: 'individual',
+      );
+      
+      // Call the post service
+      final success = await _postService.toggleLike(widget.post.id, currentUser);
+      
+      if (success) {
+        setState(() {
+          if (_isLiked) {
+            // Remove user from likes
+            _likes.removeWhere((user) => user.id == uid);
+          } else {
+            // Add user to likes
+            _likes.add(currentUser);
+          }
+          _isLiked = !_isLiked;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } finally {
+      setState(() => _isLiking = false);
+    }
+  }
+  
+  // Add a comment
+  Future<void> _addComment() async {
+    if (_commentText.trim().isEmpty || _isAddingComment) return;
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserInfo = authProvider.currentUserInfo;
+    
+    if (currentUserInfo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You need to be logged in to comment'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    setState(() => _isAddingComment = true);
+    
+    try {
+      // Get current user
+      final String uid = currentUserInfo['uid'];
+      final String name = currentUserInfo['displayName'] ?? 'User';
+      
+      // Create a temporary user object
+      final currentUser = User(
+        id: uid,
+        name: name,
+        imageUrl: currentUserInfo['photoURL'],
+        bio: '',
+        accountType: 'individual',
+      );
+      
+      // Call the post service
+      final comment = await _postService.addComment(
+        widget.post.id, 
+        currentUser, 
+        _commentText.trim()
+      );
+      
+      if (comment != null) {
+        // Clear comment text
+        _commentController.clear();
+        setState(() {
+          _commentText = '';
+          // TODO: Update the post with the new comment
+          // Will need to coordinate with the parent widget
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } finally {
+      setState(() => _isAddingComment = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +239,7 @@ class _PostCardState extends State<PostCard> {
                         ],
                       ),
                       Text(
-                        DateFormatter.formatTimeAgo(widget.post.createdAt),
+                        "${widget.post.createdAt.day}/${widget.post.createdAt.month}/${widget.post.createdAt.year}",
                         style: TextStyle(
                           color: AppColors.textWhite.withOpacity(0.6),
                           fontSize: 12,
@@ -117,22 +272,7 @@ class _PostCardState extends State<PostCard> {
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(8)),
-              child: Image.network(
-                widget.post.imageUrl!,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 200,
-                    color: Colors.grey[800],
-                    child: const Center(
-                      child: Icon(Icons.error),
-                    ),
-                  );
-                },
-              ),
+              child: _buildPostImage(widget.post.imageUrl!),
             ),
           ],
           
@@ -145,27 +285,31 @@ class _PostCardState extends State<PostCard> {
                 Row(
                   children: [
                     InkWell(
-                      onTap: () {
-                        setState(() {
-                          _isLiked = !_isLiked;
-                        });
-                      },
+                      onTap: _isLiking ? null : _toggleLike,
                       borderRadius: BorderRadius.circular(20),
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            Icon(
-                              _isLiked 
-                                  ? Icons.favorite 
-                                  : Icons.favorite_border,
-                              color: _isLiked 
-                                  ? accentColor 
-                                  : null,
-                              size: 20,
-                            ),
+                            _isLiking
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  _isLiked 
+                                      ? Icons.favorite 
+                                      : Icons.favorite_border,
+                                  color: _isLiked 
+                                      ? accentColor 
+                                      : null,
+                                  size: 20,
+                                ),
                             const SizedBox(width: 4),
-                            Text(widget.post.likes.length.toString()),
+                            Text(_likes.length.toString()),
                           ],
                         ),
                       ),
@@ -257,45 +401,74 @@ class _PostCardState extends State<PostCard> {
           
           // Comments section
           if (_showComments && widget.post.comments.isNotEmpty) ...[
-            ...widget.post.comments.map((comment) => _buildCommentTile(comment, accentColor)),
+            const Divider(height: 16, thickness: 0.5),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
-                    radius: 16,
-                    child: Icon(Icons.person, size: 20),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Add a comment...',
-                        hintStyle: TextStyle(
-                          color: AppColors.textWhite.withOpacity(0.5),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[800],
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
+                  Text(
+                    'Comments (${widget.post.comments.length})',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: Icon(
-                      Icons.send,
-                      color: accentColor,
+                  const SizedBox(height: 8),
+                  ...widget.post.comments.map((comment) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: comment.user.imageUrl != null
+                              ? NetworkImage(comment.user.imageUrl!)
+                              : null,
+                          child: comment.user.imageUrl == null
+                              ? Icon(Icons.person, size: 16)
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                comment.user.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                comment.text,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              Text(
+                                "${comment.createdAt.day}/${comment.createdAt.month}/${comment.createdAt.year}",
+                                style: TextStyle(
+                                  color: AppColors.textWhite.withOpacity(0.6),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      // Send comment
-                    },
+                  )).toList(),
+                  
+                  // Add comment button
+                  TextButton.icon(
+                    icon: const Icon(Icons.add_comment, size: 14),
+                    label: const Text('Add Comment'),
+                    onPressed: () => _showCommentDialog(context),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
                 ],
               ),
@@ -341,7 +514,7 @@ class _PostCardState extends State<PostCard> {
                     ],
                     const SizedBox(width: 4),
                     Text(
-                      DateFormatter.formatTimeAgo(comment.createdAt),
+                      "${comment.createdAt.day}/${comment.createdAt.month}/${comment.createdAt.year}",
                       style: TextStyle(
                         color: AppColors.textWhite.withOpacity(0.6),
                         fontSize: 11,
@@ -376,5 +549,136 @@ class _PostCardState extends State<PostCard> {
   
   int min(int a, int b) {
     return a < b ? a : b;
+  }
+
+  void _showCommentDialog(BuildContext context) {
+    final commentController = TextEditingController();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userInfo = authProvider.currentUserInfo;
+    
+    if (userInfo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to comment')),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        title: const Text('Add Comment'),
+        content: TextField(
+          controller: commentController,
+          decoration: const InputDecoration(
+            hintText: 'Write your comment...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (commentController.text.trim().isEmpty) {
+                return;
+              }
+              
+              // Create a simple User object
+              final user = User(
+                id: userInfo['uid'] ?? 'unknown',
+                name: userInfo['displayName'] ?? 'Unknown User',
+                imageUrl: userInfo['photoURL'],
+                bio: '',
+                accountType: 'individual',
+              );
+              
+              // Submit comment
+              final postService = PostService();
+              final newComment = await postService.addComment(
+                widget.post.id,
+                user,
+                commentController.text.trim(),
+              );
+              
+              if (newComment != null) {
+                // Update post with new comment
+                final updatedPost = Post(
+                  id: widget.post.id,
+                  author: widget.post.author,
+                  content: widget.post.content,
+                  imageUrl: widget.post.imageUrl,
+                  createdAt: widget.post.createdAt,
+                  likes: widget.post.likes,
+                  comments: [...widget.post.comments, newComment],
+                );
+                
+                if (widget.onPostUpdated != null) {
+                  widget.onPostUpdated!(updatedPost);
+                }
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Post', style: TextStyle(color: AppColors.brandTeal)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostImage(String imageUrl) {
+    // Check if the image is a local file path or a network URL
+    if (imageUrl.startsWith('http')) {
+      // Network image
+      return Image.network(
+        imageUrl,
+        width: double.infinity,
+        height: 200,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: double.infinity,
+            height: 200,
+            color: Colors.grey[800],
+            child: const Center(
+              child: Icon(Icons.error),
+            ),
+          );
+        },
+      );
+    } else {
+      // Local file path
+      try {
+        final file = File(imageUrl);
+        return Image.file(
+          file,
+          width: double.infinity,
+          height: 200,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: double.infinity,
+              height: 200,
+              color: Colors.grey[800],
+              child: const Center(
+                child: Icon(Icons.error),
+              ),
+            );
+          },
+        );
+      } catch (e) {
+        return Container(
+          width: double.infinity,
+          height: 200,
+          color: Colors.grey[800],
+          child: const Center(
+            child: Text('Failed to load image'),
+          ),
+        );
+      }
+    }
   }
 } 

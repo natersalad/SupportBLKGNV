@@ -10,6 +10,7 @@ import 'screens/home.dart';
 import 'screens/community_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/create_post_screen.dart';
 import 'providers/auth_provider.dart';
 import 'services/auth_service.dart';
 import 'firebase_options.dart';
@@ -22,10 +23,12 @@ Future main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+    debugPrint('Firebase initialized successfully');
   } catch (e) {
-    print('Failed to initialize Firebase: $e');
+    debugPrint('Failed to initialize Firebase: $e');
     // Continue without Firebase for development
+    // This allows the app to run even if Firebase initialization fails
+    // Useful for development without Firebase credentials
   }
   
   runApp(const MyApp());
@@ -41,7 +44,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(AuthService()),
         ),
-        // Add other providers here
+        // Add other providers here as needed
       ],
       child: MaterialApp(
         title: 'SupportBLKGNV',
@@ -55,6 +58,7 @@ class MyApp extends StatelessWidget {
           '/community': (context) => const CommunityScreen(),
           '/profile': (context) => const ProfilePage(),
         },
+        debugShowCheckedModeBanner: false, // Removes the debug banner
       ),
     );
   }
@@ -69,23 +73,20 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  final List<Widget> _screens = [
+    const HomeScreen(showFloatingActionButton: false),
+    const CommunityScreen(),
+    const ProfilePage(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    
-    // Check authentication state after a short delay to allow Firebase to initialize
+    // Check current user when app starts
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.checkCurrentUser();
+      Provider.of<AuthProvider>(context, listen: false).checkCurrentUser();
     });
   }
-
-  final List<Widget> _screens = <Widget>[
-    const HomeScreen(),
-    const CommunityScreen(),
-    const ProfilePage(),
-  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -95,34 +96,49 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    
-    // If not logged in, show login screen
-    if (!authProvider.isAuthenticated && !authProvider.isLoading) {
-      return const LoginScreen();
-    }
-    
-    // Show loading indicator while checking auth state
-    if (authProvider.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    
-    // User is authenticated, show main app
     return Scaffold(
       body: _screens[_selectedIndex],
+      floatingActionButton: _selectedIndex == 0 ? 
+        FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+            ).then((result) {
+              if (result == true) {
+                // Refresh the home screen by rebuilding it
+                setState(() {
+                  _screens[0] = const HomeScreen(showFloatingActionButton: false);
+                });
+              }
+            });
+          },
+          backgroundColor: AppColors.brandTeal,
+          child: const Icon(Icons.add),
+        ) : null,
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            activeIcon: Icon(Icons.people),
+            label: 'Community',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Community'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+        backgroundColor: AppColors.cardBackground,
+        selectedItemColor: AppColors.brandTeal,
+        unselectedItemColor: AppColors.textWhite.withOpacity(0.6),
       ),
     );
   }

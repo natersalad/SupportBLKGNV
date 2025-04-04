@@ -54,8 +54,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
       
       if (success && mounted) {
-        // Navigate to home screen
-        Navigator.of(context).pushReplacementNamed('/home');
+        // Navigate to main screen with bottom navigation bar instead of just home
+        Navigator.of(context).pushReplacementNamed('/');
       }
     }
   }
