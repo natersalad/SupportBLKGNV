@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'environment.dart';
 import 'theme.dart';
 import 'screens/profile.dart';
+import 'screens/home.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: Environment.fileName);
-  await Firebase.initializeApp();
+  
+  // Skip Firebase initialization for web during development
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+    } catch (e) {
+      print('Failed to initialize Firebase: $e');
+      // Continue without Firebase for development
+    }
+  } else {
+    print('Running on web platform - skipping Firebase initialization for development');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -83,17 +97,6 @@ class SignInScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Jeff work', style: TextStyle(fontSize: 24)),
     );
   }
 }
