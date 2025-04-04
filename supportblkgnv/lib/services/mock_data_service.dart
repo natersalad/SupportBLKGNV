@@ -6,7 +6,7 @@ class MockDataService {
   static final User jane = User(
     id: '1',
     name: 'Jane Smith',
-    imageUrl: 'https://randomuser.me/api/portraits/women/1.jpg',
+    imageUrl: null, // We'll use default avatar icon in the UI instead
     bio: 'Artist and community organizer',
     accountType: 'individual',
   );
@@ -14,7 +14,7 @@ class MockDataService {
   static final User marcus = User(
     id: '2',
     name: 'Marcus Johnson',
-    imageUrl: 'https://randomuser.me/api/portraits/men/1.jpg',
+    imageUrl: null, // We'll use default avatar icon in the UI instead
     bio: 'Software engineer and mentor',
     accountType: 'individual',
   );
@@ -38,7 +38,7 @@ class MockDataService {
   static final User maria = User(
     id: '5',
     name: 'Maria Wallace',
-    imageUrl: 'https://randomuser.me/api/portraits/women/2.jpg',
+    imageUrl: null, // We'll use default avatar icon in the UI instead
     bio: 'Community activist and educator',
     accountType: 'individual',
   );

@@ -16,7 +16,7 @@ class MockCommunityService {
   static final User drJackson = User(
     id: '6',
     name: 'Dr. Raymond Jackson',
-    imageUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
+    imageUrl: null,
     bio: 'Professor of African American Studies and community historian',
     accountType: 'individual',
   );
@@ -24,7 +24,7 @@ class MockCommunityService {
   static final User chefAisha = User(
     id: '7',
     name: 'Chef Aisha Williams',
-    imageUrl: 'https://randomuser.me/api/portraits/women/33.jpg',
+    imageUrl: null,
     bio: 'Award-winning chef specializing in soul food with a modern twist',
     accountType: 'individual',
   );
@@ -32,7 +32,7 @@ class MockCommunityService {
   static final User councilmemberTaylor = User(
     id: '8',
     name: 'Councilmember James Taylor',
-    imageUrl: 'https://randomuser.me/api/portraits/men/41.jpg',
+    imageUrl: null,
     bio: 'City council representative and advocate for Black business development',
     accountType: 'individual',
   );
