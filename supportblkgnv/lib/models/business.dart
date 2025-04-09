@@ -11,7 +11,7 @@ enum BusinessCategory {
   arts,
   education,
   finance,
-  other
+  other,
 }
 
 extension BusinessCategoryExtension on BusinessCategory {
@@ -180,4 +180,72 @@ class Business {
     required this.foundedDate,
     this.tags = const [],
   });
-} 
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'owner': owner.toMap(), // assumes User implements toMap()
+      'name': name,
+      'description': description,
+      'imageUrl': imageUrl,
+      'category': category.toString(),
+      'subcategories': subcategories.map((sc) => sc.toString()).toList(),
+      'location':
+          location != null
+              ? {
+                'latitude': location!.latitude,
+                'longitude': location!.longitude,
+                'address': location!.address,
+              }
+              : null,
+      'hours':
+          hours != null
+              ? {
+                'monday': hours!.monday,
+                'tuesday': hours!.tuesday,
+                'wednesday': hours!.wednesday,
+                'thursday': hours!.thursday,
+                'friday': hours!.friday,
+                'saturday': hours!.saturday,
+                'sunday': hours!.sunday,
+              }
+              : null,
+      'phone': phone,
+      'email': email,
+      'website': website,
+      'services':
+          services
+              .map(
+                (s) => {
+                  'id': s.id,
+                  'name': s.name,
+                  'description': s.description,
+                  'price': s.price,
+                  'duration': s.duration.inSeconds,
+                  'isBookable': s.isBookable,
+                },
+              )
+              .toList(),
+      'products':
+          products
+              .map(
+                (p) => {
+                  'id': p.id,
+                  'name': p.name,
+                  'description': p.description,
+                  'price': p.price,
+                  'imageUrl': p.imageUrl,
+                  'inStock': p.inStock,
+                },
+              )
+              .toList(),
+      'isVerified': isVerified,
+      'acceptsOnlineBooking': acceptsOnlineBooking,
+      'acceptsOnlinePayment': acceptsOnlinePayment,
+      'communityRating': communityRating,
+      'reviewCount': reviewCount,
+      'foundedDate': foundedDate.toIso8601String(),
+      'tags': tags,
+    };
+  }
+}

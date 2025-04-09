@@ -124,26 +124,67 @@ class Event {
   });
 
   bool get isPast => endTime.isBefore(DateTime.now());
-  bool get isOngoing => startTime.isBefore(DateTime.now()) && endTime.isAfter(DateTime.now());
+  bool get isOngoing =>
+      startTime.isBefore(DateTime.now()) && endTime.isAfter(DateTime.now());
   bool get isUpcoming => startTime.isAfter(DateTime.now());
   bool get isFull => capacity > 0 && attendees.length >= capacity;
-  
+
   String get timeDisplay {
     final startDay = '${startTime.month}/${startTime.day}/${startTime.year}';
     final endDay = '${endTime.month}/${endTime.day}/${endTime.year}';
-    
-    final startHour = startTime.hour > 12 ? startTime.hour - 12 : (startTime.hour == 0 ? 12 : startTime.hour);
+
+    final startHour =
+        startTime.hour > 12
+            ? startTime.hour - 12
+            : (startTime.hour == 0 ? 12 : startTime.hour);
     final startAmPm = startTime.hour >= 12 ? 'PM' : 'AM';
-    final startMinute = startTime.minute < 10 ? '0${startTime.minute}' : '${startTime.minute}';
-    
-    final endHour = endTime.hour > 12 ? endTime.hour - 12 : (endTime.hour == 0 ? 12 : endTime.hour);
+    final startMinute =
+        startTime.minute < 10 ? '0${startTime.minute}' : '${startTime.minute}';
+
+    final endHour =
+        endTime.hour > 12
+            ? endTime.hour - 12
+            : (endTime.hour == 0 ? 12 : endTime.hour);
     final endAmPm = endTime.hour >= 12 ? 'PM' : 'AM';
-    final endMinute = endTime.minute < 10 ? '0${endTime.minute}' : '${endTime.minute}';
-    
+    final endMinute =
+        endTime.minute < 10 ? '0${endTime.minute}' : '${endTime.minute}';
+
     if (startDay == endDay) {
       return '$startDay, $startHour:$startMinute $startAmPm - $endHour:$endMinute $endAmPm';
     } else {
       return '$startDay, $startHour:$startMinute $startAmPm - $endDay, $endHour:$endMinute $endAmPm';
     }
   }
-} 
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'startTime': startTime.toIso8601String(),
+      'endTime': endTime.toIso8601String(),
+      'location':
+          location != null
+              ? {
+                'latitude': location!.latitude,
+                'longitude': location!.longitude,
+                'address': location!.address,
+              }
+              : null,
+      'imageUrl': imageUrl,
+      'category': category.toString(),
+      'organizer': organizer.toMap(),
+      'hostingBusiness': hostingBusiness?.toMap(),
+      'ticketPrice': ticketPrice,
+      'isFree': isFree,
+      'capacity': capacity,
+      'attendees': attendees.map((user) => user.toMap()).toList(),
+      'interestedUsers': interestedUsers.map((user) => user.toMap()).toList(),
+      'needsRideShare': needsRideShare,
+      'providesChildcare': providesChildcare,
+      'isVirtual': isVirtual,
+      'virtualLink': virtualLink,
+      'tags': tags,
+    };
+  }
+}

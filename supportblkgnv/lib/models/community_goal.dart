@@ -21,8 +21,9 @@ class CommunityGoal {
 
   double get progressPercentage => currentAmount / targetAmount;
   bool get isCompleted => currentAmount >= targetAmount;
-  bool get isActive => DateTime.now().isBefore(endDate) && DateTime.now().isAfter(startDate);
-  
+  bool get isActive =>
+      DateTime.now().isBefore(endDate) && DateTime.now().isAfter(startDate);
+
   factory CommunityGoal.fromJson(Map<String, dynamic> json) {
     return CommunityGoal(
       id: json['id'],
@@ -48,4 +49,6 @@ class CommunityGoal {
       'participants': participants,
     };
   }
-} 
+
+  Map<String, dynamic> toMap() => toJson();
+}
