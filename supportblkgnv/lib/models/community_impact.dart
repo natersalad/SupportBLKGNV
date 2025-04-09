@@ -23,15 +23,23 @@ class Transaction {
     required this.type,
     this.isVerified = false,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user': user.toMap(),
+      'business': business.toMap(),
+      'amount': amount,
+      'date': date.toIso8601String(),
+      'description': description,
+      'items': items,
+      'type': type.toString(),
+      'isVerified': isVerified,
+    };
+  }
 }
 
-enum TransactionType {
-  purchase,
-  donation,
-  service,
-  subscription,
-  other
-}
+enum TransactionType { purchase, donation, service, subscription, other }
 
 class CirculationGoal {
   final String id;
@@ -62,9 +70,26 @@ class CirculationGoal {
 
   double get progressPercentage => (currentAmount / targetAmount) * 100;
   bool get isCompleted => currentAmount >= targetAmount;
-  bool get isActive => DateTime.now().isAfter(startDate) && DateTime.now().isBefore(endDate);
+  bool get isActive =>
+      DateTime.now().isAfter(startDate) && DateTime.now().isBefore(endDate);
   bool get isExpired => DateTime.now().isAfter(endDate) && !isCompleted;
   int get daysRemaining => endDate.difference(DateTime.now()).inDays;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'targetAmount': targetAmount,
+      'currentAmount': currentAmount,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
+      'participants': participants.map((u) => u.toMap()).toList(),
+      'creator': creator.toMap(),
+      'focusedBusinesses': focusedBusinesses.map((b) => b.toMap()).toList(),
+      'focusedCategories': focusedCategories.map((c) => c.toString()).toList(),
+    };
+  }
 }
 
 class CommunityImpactReport {
@@ -93,16 +118,35 @@ class CommunityImpactReport {
     required this.economicMultiplier,
     required this.monthlyTrendData,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'month': month,
+      'year': year,
+      'totalSpending': totalSpending,
+      'totalTransactions': totalTransactions,
+      'spendingByCategory': spendingByCategory.map(
+        (key, value) => MapEntry(key.toString(), value),
+      ),
+      'topBusinesses': topBusinesses.map((b) => b.toMap()).toList(),
+      'percentIncrease': percentIncrease,
+      'activeParticipants': activeParticipants,
+      'completedGoals': completedGoals.map((goal) => goal.toMap()).toList(),
+      'economicMultiplier': economicMultiplier,
+      'monthlyTrendData': monthlyTrendData.map((data) => data.toMap()).toList(),
+    };
+  }
 }
 
 class ChartDataPoint {
   final DateTime date;
   final double value;
-  
-  ChartDataPoint({
-    required this.date,
-    required this.value,
-  });
+
+  ChartDataPoint({required this.date, required this.value});
+
+  Map<String, dynamic> toMap() {
+    return {'date': date.toIso8601String(), 'value': value};
+  }
 }
 
 class UserImpactStats {
@@ -115,7 +159,7 @@ class UserImpactStats {
   final int goalsContributed;
   final int consecutiveWeeks;
   final double impactScore;
-  
+
   UserImpactStats({
     required this.user,
     required this.totalSpent,
@@ -127,4 +171,18 @@ class UserImpactStats {
     required this.consecutiveWeeks,
     required this.impactScore,
   });
-} 
+
+  Map<String, dynamic> toMap() {
+    return {
+      'user': user.toMap(),
+      'totalSpent': totalSpent,
+      'transactionCount': transactionCount,
+      'averageTransaction': averageTransaction,
+      'favoriteBusinesses': favoriteBusinesses.map((b) => b.toMap()).toList(),
+      'topCategory': topCategory.toString(),
+      'goalsContributed': goalsContributed,
+      'consecutiveWeeks': consecutiveWeeks,
+      'impactScore': impactScore,
+    };
+  }
+}

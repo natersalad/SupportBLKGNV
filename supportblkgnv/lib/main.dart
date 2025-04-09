@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:supportblkgnv/services/seed_database.dart';
 import 'environment.dart';
 import 'theme.dart';
 import 'screens/profile.dart';
@@ -11,6 +12,7 @@ import 'screens/community_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/create_post_screen.dart';
+import 'screens/edit_profile.dart';
 import 'providers/auth_provider.dart';
 import 'services/auth_service.dart';
 import 'firebase_options.dart';
@@ -18,7 +20,7 @@ import 'firebase_options.dart';
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: Environment.fileName);
-  
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -30,7 +32,7 @@ Future main() async {
     // This allows the app to run even if Firebase initialization fails
     // Useful for development without Firebase credentials
   }
-  
+  seedDatabase();
   runApp(const MyApp());
 }
 
@@ -41,9 +43,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(AuthService()),
-        ),
+        ChangeNotifierProvider(create: (_) => AuthProvider(AuthService())),
         // Add other providers here as needed
       ],
       child: MaterialApp(
@@ -57,6 +57,8 @@ class MyApp extends StatelessWidget {
           '/home': (context) => const HomeScreen(),
           '/community': (context) => const CommunityScreen(),
           '/profile': (context) => const ProfilePage(),
+          '/edit_profile': (context) => const EditProfilePage(),
+          // TODO add public profile and profile details as routes (similar to edit profile)
         },
         debugShowCheckedModeBanner: false, // Removes the debug banner
       ),
@@ -98,24 +100,30 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      floatingActionButton: _selectedIndex == 0 ? 
-        FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-            ).then((result) {
-              if (result == true) {
-                // Refresh the home screen by rebuilding it
-                setState(() {
-                  _screens[0] = const HomeScreen(showFloatingActionButton: false);
-                });
-              }
-            });
-          },
-          backgroundColor: AppColors.brandTeal,
-          child: const Icon(Icons.add),
-        ) : null,
+      floatingActionButton:
+          _selectedIndex == 0
+              ? FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreatePostScreen(),
+                    ),
+                  ).then((result) {
+                    if (result == true) {
+                      // Refresh the home screen by rebuilding it
+                      setState(() {
+                        _screens[0] = const HomeScreen(
+                          showFloatingActionButton: false,
+                        );
+                      });
+                    }
+                  });
+                },
+                backgroundColor: AppColors.brandTeal,
+                child: const Icon(Icons.add),
+              )
+              : null,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

@@ -16,7 +16,7 @@ class User {
   });
 
   bool get isBusiness => accountType == 'business';
-  
+
   // Convert User to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
@@ -27,11 +27,11 @@ class User {
       'accountType': accountType,
     };
   }
-  
+
   // Create User from Firestore document
   factory User.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    
+
     return User(
       id: doc.id,
       name: data['name'] ?? 'Unknown',
@@ -40,7 +40,7 @@ class User {
       accountType: data['accountType'] ?? 'individual',
     );
   }
-  
+
   // Create User from Map
   factory User.fromMap(Map<String, dynamic> map, String id) {
     return User(
@@ -51,4 +51,4 @@ class User {
       accountType: map['accountType'] ?? 'individual',
     );
   }
-} 
+}

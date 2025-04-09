@@ -44,4 +44,6 @@ class ImpactReport {
       'topBusinesses': topBusinesses,
     };
   }
-} 
+
+  Map<String, dynamic> toMap() => toJson();
+}
