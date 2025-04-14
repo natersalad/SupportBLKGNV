@@ -18,10 +18,7 @@ import 'package:supportblkgnv/environment.dart';
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -49,6 +46,15 @@ class DefaultFirebaseOptions {
         );
     }
   }
+
+  // Added web configuration using the same values as Android for development
+  static FirebaseOptions web = FirebaseOptions(
+    apiKey: Environment.firebaseApiKeyAndroid,
+    appId: Environment.firebaseAppIdAndroid,
+    messagingSenderId: Environment.firebaseMessagingSenderId,
+    projectId: Environment.firebaseProjectId,
+    storageBucket: Environment.firebaseStorageBucket,
+  );
 
   static FirebaseOptions android = FirebaseOptions(
     apiKey: Environment.firebaseApiKeyAndroid,
