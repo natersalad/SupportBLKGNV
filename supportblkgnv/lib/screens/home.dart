@@ -3,10 +3,12 @@ import 'package:supportblkgnv/components/custom_app_bar.dart';
 import 'package:supportblkgnv/components/post_card.dart';
 import 'package:supportblkgnv/models/post.dart';
 import 'package:supportblkgnv/screens/create_post_screen.dart';
+import 'package:supportblkgnv/screens/public_profile.dart';
 import 'package:supportblkgnv/services/post_service.dart';
 import 'package:supportblkgnv/theme.dart';
 import 'package:provider/provider.dart';
 import 'package:supportblkgnv/providers/auth_provider.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final bool showFloatingActionButton;
@@ -148,6 +150,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 return PostCard(
                   post: _posts[index],
                   onPostUpdated: _updatePost,
+                  onProfileTap: (userId) {
+                    Navigator.pushNamed(
+                      context,
+                      '/public_profile',
+                      arguments: userId,
+                    );
+                  },
                 );
               },
             ),

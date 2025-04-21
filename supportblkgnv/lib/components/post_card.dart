@@ -11,11 +11,13 @@ import 'package:supportblkgnv/providers/auth_provider.dart';
 class PostCard extends StatefulWidget {
   final Post post;
   final Function(Post)? onPostUpdated;
+  final void Function(String userId)? onProfileTap;
 
   const PostCard({
     Key? key,
     required this.post,
     this.onPostUpdated,
+    this.onProfileTap,
   }) : super(key: key);
 
   @override
@@ -210,9 +212,17 @@ class _PostCardState extends State<PostCard> {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundImage: NetworkImage(widget.post.author.imageUrl ?? 'https://via.placeholder.com/40'),
+                InkWell(
+                  onTap: widget.onProfileTap == null
+                      ? null
+                      : () => widget.onProfileTap!(widget.post.author.id),
+                  borderRadius: BorderRadius.circular(24),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundImage: NetworkImage(
+                      widget.post.author.imageUrl ?? 'https://via.placeholder.com/40',
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -221,11 +231,16 @@ class _PostCardState extends State<PostCard> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            widget.post.author.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          InkWell(
+                            onTap: widget.onProfileTap == null
+                                ? null
+                                : () => widget.onProfileTap!(widget.post.author.id),
+                            child: Text(
+                              widget.post.author.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                           if (isBusiness) ...[
