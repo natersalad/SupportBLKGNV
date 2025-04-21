@@ -47,8 +47,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       
       if (success && mounted) {
-        // Navigate to home screen
-        Navigator.of(context).pushReplacementNamed('/home');
+        // Navigate to main page
+        Navigator.of(context).pushReplacementNamed('/');
       }
     } else if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(

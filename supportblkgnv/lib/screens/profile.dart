@@ -4,6 +4,7 @@ import 'package:supportblkgnv/providers/auth_provider.dart';
 import 'package:supportblkgnv/screens/profile_details.dart';
 import 'package:supportblkgnv/screens/public_profile.dart';
 import 'package:supportblkgnv/theme.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -24,6 +25,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    print('🔐 currentUser in ProfilePage.build(): '
+        '${FirebaseAuth.instance.currentUser}');
     final authProvider = Provider.of<AuthProvider>(context);
     final userInfo = authProvider.currentUserInfo;
     const String defaultProfileImage =
