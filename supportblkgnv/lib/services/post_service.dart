@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supportblkgnv/models/post.dart';
 import 'package:supportblkgnv/models/user.dart';
 import 'package:supportblkgnv/services/mock_data_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 
 class PostService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -22,18 +23,55 @@ class PostService {
     }
     
     try {
-      // Get posts from Firestore
-      final postsSnapshot = await _firestore
-          .collection(postsCollection)
-          .orderBy('createdAt', descending: true)
+       // Load the IDs of users the current user follows
+      final me = FirebaseAuth.instance.currentUser!.uid;
+      final followingSnap = await _firestore
+          .collection('users')
+          .doc(me)
+          .collection('following')
           .get();
+      final followingIds = followingSnap.docs.map((d) => d.id).toList()
+        ..add(me); // include own posts
+
+      const int maxBatchSize = 10;
+      List<List<String>> batches = [];
+      for (var i = 0; i < followingIds.length; i += maxBatchSize) {
+        batches.add(
+          followingIds.sublist(
+            i,
+            (i + maxBatchSize > followingIds.length)
+                ? followingIds.length
+                : i + maxBatchSize,
+          ),
+        );
+      }
+      
+      final batchSnapshots = await Future.wait(
+        batches.map((batch) => _firestore
+            .collection(postsCollection)
+            .where('authorId', whereIn: batch)
+            .orderBy('createdAt', descending: true)
+            .get()),
+      );
+      
+      final allDocs = batchSnapshots.expand((snap) => snap.docs).toList()
+      ..sort((a, b) {
+        final ta = (a.data()['createdAt'] as Timestamp).toDate();
+        final tb = (b.data()['createdAt'] as Timestamp).toDate();
+        return tb.compareTo(ta); // newest first
+      });
+
+      final uniqueDocs = { for (var d in allDocs) d.id: d }.values.toList();
       
       // Map of user IDs to User objects (to avoid duplicate fetches)
       final Map<String, User> userCache = {};
       
       // Process posts
       List<Post> posts = [];
-      for (var doc in postsSnapshot.docs) {
+      for(final doc in uniqueDocs){
+        final postData = doc.data();
+        postData['id'] = doc.id;
+        
         // Get author
         final String authorId = doc.data()['authorId'];
         User author;
@@ -42,13 +80,16 @@ class PostService {
         } else {
           // Fetch user from Firestore
           final userDoc = await _firestore.collection('users').doc(authorId).get();
-          if (userDoc.exists) {
-            author = User.fromFirestore(userDoc);
-            userCache[authorId] = author;
-          } else {
-            // Skip this post if we can't find the author
-            continue;
-          }
+          if (!userDoc.exists) continue;
+          final data = userDoc.data()!;
+          author = User(
+            id: userDoc.id,
+            name: data['name'] ?? 'Unknown',
+            imageUrl: data['imageUrl'],
+            bio: data['bio'] ?? '',
+            accountType: data['accountType'] ?? 'individual',
+          );
+          userCache[authorId] = author;
         }
         
         // Get likes

@@ -14,6 +14,7 @@ import 'screens/register_screen.dart';
 import 'screens/create_post_screen.dart';
 import 'screens/edit_profile.dart';
 import 'screens/public_profile.dart';
+import 'screens/search.dart';
 import 'providers/auth_provider.dart';
 import 'services/auth_service.dart';
 import 'firebase_options.dart';
@@ -59,10 +60,13 @@ class MyApp extends StatelessWidget {
           '/community': (context) => const CommunityScreen(),
           '/profile': (context) => const ProfilePage(),
           '/edit_profile': (context) => const EditProfilePage(),
+          '/search_users': (context) => const SearchScreen(),
           '/public_profile': (context) {
             final userId = ModalRoute.of(context)!.settings.arguments as String;
             return PublicProfilePage(userId: userId);
           },
+          
+
           // TODO add public profile and profile details as routes (similar to edit profile)
         },
         debugShowCheckedModeBanner: false, // Removes the debug banner
