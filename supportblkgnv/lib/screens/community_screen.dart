@@ -13,22 +13,23 @@ class CommunityScreen extends StatefulWidget {
   State<CommunityScreen> createState() => _CommunityScreenState();
 }
 
-class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProviderStateMixin {
+class _CommunityScreenState extends State<CommunityScreen>
+    with SingleTickerProviderStateMixin {
   final MockCommunityService _mockService = MockCommunityService();
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,7 +40,6 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
           isScrollable: true,
           tabs: const [
             Tab(text: 'Overview'),
-            Tab(text: 'Map'),
             Tab(text: 'Goals'),
             Tab(text: 'Impact'),
           ],
@@ -47,16 +47,11 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildOverviewTab(),
-          const CommunityMapScreen(),
-          _buildGoalsTab(),
-          _buildImpactTab(),
-        ],
+        children: [_buildOverviewTab(), _buildGoalsTab(), _buildImpactTab()],
       ),
     );
   }
-  
+
   Widget _buildOverviewTab() {
     return SingleChildScrollView(
       child: Column(
@@ -69,7 +64,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-  
+
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -87,9 +82,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
           const SizedBox(height: 8),
           Text(
             'Supporting, connecting, and empowering the Black community in Gainesville, FL',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
@@ -107,11 +102,11 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-  
+
   Widget _buildCommunityStats() {
     final impactReport = _mockService.getImpactReports().first;
     final formatter = NumberFormat.compact();
-    
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -161,8 +156,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-  
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Card(
         elevation: 2,
@@ -171,11 +171,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                color: color,
-                size: 32,
-              ),
+              Icon(icon, color: color, size: 32),
               const SizedBox(height: 8),
               Text(
                 value,
@@ -185,9 +181,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
               ),
               Text(
                 title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ),
@@ -195,10 +191,10 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-  
+
   Widget _buildUpcomingEvents() {
     final events = _mockService.getEvents().take(3).toList();
-    
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -226,9 +222,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             itemCount: events.length,
             itemBuilder: (context, index) {
               final event = events[index];
-              final formattedDate = DateFormat('MMM dd, yyyy').format(event.startTime);
-              final formattedTime = DateFormat('h:mm a').format(event.startTime);
-              
+              final formattedDate = DateFormat(
+                'MMM dd, yyyy',
+              ).format(event.startTime);
+              final formattedTime = DateFormat(
+                'h:mm a',
+              ).format(event.startTime);
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 16.0),
                 child: ListTile(
@@ -236,7 +236,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                   leading: CircleAvatar(
                     radius: 30,
                     backgroundImage: NetworkImage(
-                      event.imageUrl ?? 'https://via.placeholder.com/60'
+                      event.imageUrl ?? 'https://via.placeholder.com/60',
                     ),
                   ),
                   title: Text(
@@ -267,7 +267,12 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                         children: [
                           const Icon(Icons.location_on, size: 16),
                           const SizedBox(width: 4),
-                          Expanded(child: Text(event.location?.address ?? 'No location specified')),
+                          Expanded(
+                            child: Text(
+                              event.location?.address ??
+                                  'No location specified',
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -284,10 +289,10 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-  
+
   Widget _buildGoalsTab() {
     final goals = _mockService.getCommunityGoals();
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
       itemCount: goals.length,
@@ -295,7 +300,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
         final goal = goals[index];
         final progress = goal.currentAmount / goal.targetAmount;
         final formatter = NumberFormat.currency(symbol: '\$');
-        
+
         return Card(
           margin: const EdgeInsets.only(bottom: 16.0),
           child: Padding(
@@ -303,10 +308,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  goal.title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+                Text(goal.title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(goal.description),
                 const SizedBox(height: 16),
@@ -361,20 +363,17 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       },
     );
   }
-  
+
   Widget _buildGoalInfoRow(IconData icon, String text) {
     return Row(
       children: [
         Icon(icon, size: 16, color: Colors.grey[600]),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(color: Colors.grey[600]),
-        ),
+        Text(text, style: TextStyle(color: Colors.grey[600])),
       ],
     );
   }
-  
+
   Widget _buildImpactTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -400,13 +399,14 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-  
+
   Widget _buildImpactTimeline() {
     final milestones = [
       {
         'date': 'Jan 2023',
         'title': 'Community Launch',
-        'description': 'Launched the Support BLK GNV initiative with 25 founding businesses',
+        'description':
+            'Launched the Support BLK GNV initiative with 25 founding businesses',
         'isCompleted': true,
       },
       {
@@ -418,7 +418,8 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       {
         'date': 'Jun 2023',
         'title': '50 Business Milestone',
-        'description': 'Directory expanded to include 50 Black-owned businesses',
+        'description':
+            'Directory expanded to include 50 Black-owned businesses',
         'isCompleted': true,
       },
       {
@@ -436,11 +437,12 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       {
         'date': 'Jun 2024',
         'title': 'Community Center Opening',
-        'description': 'Grand opening of the new Black Gainesville Community Center',
+        'description':
+            'Grand opening of the new Black Gainesville Community Center',
         'isCompleted': false,
       },
     ];
-    
+
     return Card(
       margin: const EdgeInsets.all(16.0),
       elevation: 4,
@@ -464,19 +466,21 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                 final isFirst = index == 0;
                 final isLast = index == milestones.length - 1;
                 final isCompleted = milestone['isCompleted'] as bool;
-                
+
                 return TimelineTile(
                   isFirst: isFirst,
                   isLast: isLast,
                   alignment: TimelineAlign.start,
                   indicatorStyle: IndicatorStyle(
                     width: 20,
-                    color: isCompleted
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey,
+                    color:
+                        isCompleted
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
                     iconStyle: IconStyle(
                       color: Colors.white,
-                      iconData: isCompleted ? Icons.check : Icons.hourglass_empty,
+                      iconData:
+                          isCompleted ? Icons.check : Icons.hourglass_empty,
                     ),
                   ),
                   endChild: Container(
@@ -512,4 +516,4 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       ),
     );
   }
-} 
+}

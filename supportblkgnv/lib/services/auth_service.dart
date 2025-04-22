@@ -8,7 +8,7 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Demo mode for testing/development
-  bool _devMode = true;
+  bool _devMode = false;
   String? _mockUserEmail;
   String? _mockUserName;
   String? _mockUserId;
@@ -106,6 +106,8 @@ class AuthService {
 
       // Create user document in Firestore
       if (userCredential.user != null) {
+        await userCredential.user!.updateDisplayName(name);
+        await userCredential.user!.reload();
         await _createUserDocument(
           userCredential.user!.uid,
           name,
@@ -178,10 +180,16 @@ class AuthService {
       };
     }
 
+    // If display name is empty, we'll trigger the sync on next app start
+    if (user.displayName == null || user.displayName!.isEmpty) {
+      // Don't await here to avoid blocking, just fire and continue
+      syncUserProfileData();
+    }
+
     return {
       'uid': user.uid,
-      'email': user.email,
-      'displayName': user.displayName,
+      'email': user.email ?? '',
+      'displayName': user.displayName ?? 'User', // Provide default
       'emailVerified': user.emailVerified,
       'isAnonymous': user.isAnonymous,
       'photoURL': user.photoURL,
@@ -243,5 +251,43 @@ class AuthService {
     }
 
     return Exception(message);
+  }
+
+  // Add this method to synchronize user profile data
+  Future<Map<String, dynamic>> syncUserProfileData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) {
+      return {
+        'uid': '',
+        'email': '',
+        'displayName': '',
+        'emailVerified': false,
+        'isAnonymous': true,
+        'photoURL': null,
+      };
+    }
+
+    // If display name is missing, check Firestore
+    if (user.displayName == null || user.displayName!.isEmpty) {
+      try {
+        final userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
+        if (userDoc.exists && userDoc.data() != null) {
+          final userData = userDoc.data()!;
+
+          // Update Firebase Auth profile with Firestore data
+          if (userData.containsKey('name') && userData['name'] != null) {
+            await user.updateDisplayName(userData['name']);
+            await user.updatePhotoURL(userData['photoURL']);
+            await user.reload(); // Reload user data
+          }
+        }
+      } catch (e) {
+        print('Error syncing user profile: $e');
+      }
+    }
+
+    // Return fresh user data after possible update
+    return getCurrentUserInfo();
   }
 }
