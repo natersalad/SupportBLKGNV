@@ -45,7 +45,7 @@ class MockDataService {
 
   // Sample posts
   static List<Post> getPosts() {
-    return [
+    final postsList = [
       Post(
         id: '1',
         author: jane,
@@ -55,13 +55,13 @@ class MockDataService {
         likes: [marcus, maria, blackCoffeeShop],
         comments: [
           Comment(
-            id: '1',
+            id: 'comment-1',
             user: marcus,
             text: 'Can\'t wait to see it! Will definitely be there.',
             createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
           ),
           Comment(
-            id: '2',
+            id: 'comment-2',
             user: blackCoffeeShop,
             text: 'We\'ll be providing refreshments for the opening. Looking forward to it!',
             createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 30)),
@@ -77,7 +77,7 @@ class MockDataService {
         likes: [jane, marcus, maria, techHubBLK],
         comments: [
           Comment(
-            id: '3',
+            id: 'comment-3',
             user: maria,
             text: 'Your lattes are amazing! Will be there.',
             createdAt: DateTime.now().subtract(const Duration(hours: 4, minutes: 30)),
@@ -93,13 +93,13 @@ class MockDataService {
         likes: [jane, marcus],
         comments: [
           Comment(
-            id: '4',
+            id: 'comment-4',
             user: marcus,
             text: 'Is there an age requirement? I have a nephew who would be perfect for this.',
             createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
           ),
           Comment(
-            id: '5',
+            id: 'comment-5',
             user: techHubBLK,
             text: 'No age requirements! We welcome young innovators. Send them our way!',
             createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 1)),
@@ -115,7 +115,7 @@ class MockDataService {
         likes: [jane, blackCoffeeShop, techHubBLK],
         comments: [
           Comment(
-            id: '6',
+            id: 'comment-6',
             user: techHubBLK,
             text: 'Great initiative! Let us know if you need space for future workshops.',
             createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 23)),
@@ -130,13 +130,13 @@ class MockDataService {
         likes: [jane, marcus, blackCoffeeShop],
         comments: [
           Comment(
-            id: '7',
+            id: 'comment-7',
             user: jane,
             text: 'I\'ll be there! Can we bring the kids?',
             createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 12)),
           ),
           Comment(
-            id: '8',
+            id: 'comment-8',
             user: maria,
             text: 'Absolutely! Family-friendly event. We\'ll have activities for the kids too.',
             createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 10)),
@@ -144,5 +144,37 @@ class MockDataService {
         ],
       ),
     ];
+    
+    // Verify all posts have valid IDs
+    for (int i = 0; i < postsList.length; i++) {
+      if (postsList[i].id.isEmpty) {
+        // Generate a new ID if empty
+        final Post post = postsList[i];
+        postsList[i] = Post(
+          id: 'generated-post-${i+1}',
+          author: post.author,
+          content: post.content,
+          imageUrl: post.imageUrl,
+          createdAt: post.createdAt,
+          likes: post.likes,
+          comments: post.comments,
+        );
+      }
+      
+      // Also verify all comments have valid IDs
+      for (int j = 0; j < postsList[i].comments.length; j++) {
+        if (postsList[i].comments[j].id.isEmpty) {
+          final Comment comment = postsList[i].comments[j];
+          postsList[i].comments[j] = Comment(
+            id: 'generated-comment-${i+1}-${j+1}',
+            user: comment.user,
+            text: comment.text,
+            createdAt: comment.createdAt,
+          );
+        }
+      }
+    }
+    
+    return postsList;
   }
 } 

@@ -16,7 +16,6 @@ class Comment {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'userId': user.id,
       'text': text,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -29,6 +28,17 @@ class Comment {
       user: user,
       text: map['text'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+    );
+  }
+  
+  factory Comment.fromFirestore(DocumentSnapshot doc, User user) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    return Comment(
+      id: doc.id,
+      user: user,
+      text: data['text'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
   }
 }
@@ -54,17 +64,38 @@ class Post {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'authorId': author.id,
       'content': content,
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'likeIds': likes.map((user) => user.id).toList(),
+      // Comments are stored in a subcollection, not in the post document
     };
   }
 
-  // This is a factory constructor that won't be fully implemented yet
-  // as it requires the user service to resolve user objects from IDs
+  // Create Post from Firestore document
+  factory Post.fromFirestore(
+    DocumentSnapshot doc, 
+    User author, 
+    List<User> likes,
+    List<Comment> comments
+  ) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    return Post(
+      id: doc.id,
+      author: author,
+      content: data['content'] ?? '',
+      imageUrl: data['imageUrl'],
+      createdAt: data['createdAt'] is Timestamp 
+        ? (data['createdAt'] as Timestamp).toDate() 
+        : DateTime.now(),
+      likes: likes,
+      comments: comments,
+    );
+  }
+
+  // This factory method is kept for backwards compatibility
   static Future<Post> fromMap(
     Map<String, dynamic> map, 
     User author, 

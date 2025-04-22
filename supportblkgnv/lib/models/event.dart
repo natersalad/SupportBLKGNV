@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supportblkgnv/models/user.dart';
 import 'package:supportblkgnv/models/business.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum EventCategory {
   cultural,
@@ -87,18 +88,24 @@ class Event {
   final Location? location;
   final String? imageUrl;
   final EventCategory category;
-  final User organizer;
-  final Business? hostingBusiness;
+  final String organizerId;
+  final String? hostingBusinessId;
   final double ticketPrice;
   final bool isFree;
   final int capacity;
-  final List<User> attendees;
-  final List<User> interestedUsers;
+  final List<String> attendeeIds;
+  final List<String> interestedUserIds;
   final bool needsRideShare;
   final bool providesChildcare;
   final bool isVirtual;
   final String? virtualLink;
   final List<String> tags;
+
+  // Non-stored computed fields
+  User? _organizer;
+  Business? _hostingBusiness;
+  List<User>? _attendees;
+  List<User>? _interestedUsers;
 
   Event({
     required this.id,
@@ -109,25 +116,45 @@ class Event {
     this.location,
     this.imageUrl,
     required this.category,
-    required this.organizer,
-    this.hostingBusiness,
+    required this.organizerId,
+    User? organizer,
+    this.hostingBusinessId,
+    Business? hostingBusiness,
     this.ticketPrice = 0.0,
     this.isFree = true,
     this.capacity = 0,
-    this.attendees = const [],
-    this.interestedUsers = const [],
+    this.attendeeIds = const [],
+    List<User>? attendees,
+    this.interestedUserIds = const [],
+    List<User>? interestedUsers,
     this.needsRideShare = false,
     this.providesChildcare = false,
     this.isVirtual = false,
     this.virtualLink,
     this.tags = const [],
-  });
+  }) : 
+      _organizer = organizer,
+      _hostingBusiness = hostingBusiness,
+      _attendees = attendees,
+      _interestedUsers = interestedUsers;
+
+  // Getters for related objects
+  User? get organizer => _organizer;
+  Business? get hostingBusiness => _hostingBusiness;
+  List<User> get attendees => _attendees ?? [];
+  List<User> get interestedUsers => _interestedUsers ?? [];
+
+  // Setters for related objects
+  set organizer(User? user) => _organizer = user;
+  set hostingBusiness(Business? business) => _hostingBusiness = business;
+  set attendees(List<User>? users) => _attendees = users;
+  set interestedUsers(List<User>? users) => _interestedUsers = users;
 
   bool get isPast => endTime.isBefore(DateTime.now());
   bool get isOngoing =>
       startTime.isBefore(DateTime.now()) && endTime.isAfter(DateTime.now());
   bool get isUpcoming => startTime.isAfter(DateTime.now());
-  bool get isFull => capacity > 0 && attendees.length >= capacity;
+  bool get isFull => capacity > 0 && attendeeIds.length >= capacity;
 
   String get timeDisplay {
     final startDay = '${startTime.month}/${startTime.day}/${startTime.year}';
@@ -158,33 +185,83 @@ class Event {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'description': description,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
-      'location':
-          location != null
-              ? {
-                'latitude': location!.latitude,
-                'longitude': location!.longitude,
-                'address': location!.address,
-              }
-              : null,
+      'startTime': Timestamp.fromDate(startTime),
+      'endTime': Timestamp.fromDate(endTime),
+      'location': location?.toMap(),
       'imageUrl': imageUrl,
-      'category': category.toString(),
-      'organizer': organizer.toMap(),
-      'hostingBusiness': hostingBusiness?.toMap(),
+      'category': category.toString().split('.').last,
+      'organizerId': organizerId,
+      'hostingBusinessId': hostingBusinessId,
       'ticketPrice': ticketPrice,
       'isFree': isFree,
       'capacity': capacity,
-      'attendees': attendees.map((user) => user.toMap()).toList(),
-      'interestedUsers': interestedUsers.map((user) => user.toMap()).toList(),
+      'attendeeIds': attendeeIds,
+      'interestedUserIds': interestedUserIds,
       'needsRideShare': needsRideShare,
       'providesChildcare': providesChildcare,
       'isVirtual': isVirtual,
       'virtualLink': virtualLink,
       'tags': tags,
     };
+  }
+  
+  factory Event.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    // Parse location if available
+    Location? location;
+    if (data['location'] != null) {
+      location = Location.fromMap(data['location'] as Map<String, dynamic>);
+    }
+    
+    // Parse category
+    EventCategory category = _parseEventCategory(data['category'] ?? 'other');
+    
+    // Parse times
+    DateTime startTime = data['startTime'] is Timestamp 
+        ? (data['startTime'] as Timestamp).toDate() 
+        : DateTime.now();
+    DateTime endTime = data['endTime'] is Timestamp 
+        ? (data['endTime'] as Timestamp).toDate() 
+        : DateTime.now().add(const Duration(hours: 2));
+    
+    return Event(
+      id: doc.id,
+      title: data['title'] ?? 'Untitled Event',
+      description: data['description'] ?? '',
+      startTime: startTime,
+      endTime: endTime,
+      location: location,
+      imageUrl: data['imageUrl'],
+      category: category,
+      organizerId: data['organizerId'] ?? '',
+      hostingBusinessId: data['hostingBusinessId'],
+      ticketPrice: (data['ticketPrice'] as num?)?.toDouble() ?? 0.0,
+      isFree: data['isFree'] ?? true,
+      capacity: data['capacity'] ?? 0,
+      attendeeIds: data['attendeeIds'] != null ? List<String>.from(data['attendeeIds']) : [],
+      interestedUserIds: data['interestedUserIds'] != null ? List<String>.from(data['interestedUserIds']) : [],
+      needsRideShare: data['needsRideShare'] ?? false,
+      providesChildcare: data['providesChildcare'] ?? false,
+      isVirtual: data['isVirtual'] ?? false,
+      virtualLink: data['virtualLink'],
+      tags: data['tags'] != null ? List<String>.from(data['tags']) : [],
+    );
+  }
+  
+  // Helper method to parse event category from string
+  static EventCategory _parseEventCategory(String categoryStr) {
+    switch (categoryStr.toLowerCase()) {
+      case 'cultural': return EventCategory.cultural;
+      case 'educational': return EventCategory.educational;
+      case 'networking': return EventCategory.networking;
+      case 'entertainment': return EventCategory.entertainment;
+      case 'community': return EventCategory.community;
+      case 'workshop': return EventCategory.workshop;
+      case 'fundraiser': return EventCategory.fundraiser;
+      default: return EventCategory.other;
+    }
   }
 }

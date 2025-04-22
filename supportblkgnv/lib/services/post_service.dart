@@ -9,8 +9,8 @@ class PostService {
   final String postsCollection = 'posts';
   final String commentsCollection = 'comments';
   
-  // For development mode
-  final bool _devMode = true;
+  // For development mode - set to false to use real Firebase data
+  final bool _devMode = false;
   
   // Get all posts
   Future<List<Post>> getPosts() async {
@@ -34,11 +34,8 @@ class PostService {
       // Process posts
       List<Post> posts = [];
       for (var doc in postsSnapshot.docs) {
-        final postData = doc.data();
-        postData['id'] = doc.id;
-        
         // Get author
-        final String authorId = postData['authorId'];
+        final String authorId = doc.data()['authorId'];
         User author;
         if (userCache.containsKey(authorId)) {
           author = userCache[authorId]!;
@@ -46,14 +43,7 @@ class PostService {
           // Fetch user from Firestore
           final userDoc = await _firestore.collection('users').doc(authorId).get();
           if (userDoc.exists) {
-            // Create user object (simplified for this example)
-            author = User(
-              id: userDoc.id,
-              name: userDoc.data()?['name'] ?? 'Unknown',
-              imageUrl: userDoc.data()?['imageUrl'],
-              bio: userDoc.data()?['bio'] ?? '',
-              accountType: userDoc.data()?['accountType'] ?? 'individual',
-            );
+            author = User.fromFirestore(userDoc);
             userCache[authorId] = author;
           } else {
             // Skip this post if we can't find the author
@@ -63,7 +53,7 @@ class PostService {
         
         // Get likes
         List<User> likes = [];
-        final List<dynamic> likeIds = postData['likeIds'] ?? [];
+        final List<dynamic> likeIds = doc.data()['likeIds'] ?? [];
         for (String userId in likeIds) {
           if (userCache.containsKey(userId)) {
             likes.add(userCache[userId]!);
@@ -71,13 +61,7 @@ class PostService {
             // Fetch user
             final userDoc = await _firestore.collection('users').doc(userId).get();
             if (userDoc.exists) {
-              final user = User(
-                id: userDoc.id,
-                name: userDoc.data()?['name'] ?? 'Unknown',
-                imageUrl: userDoc.data()?['imageUrl'],
-                bio: userDoc.data()?['bio'] ?? '',
-                accountType: userDoc.data()?['accountType'] ?? 'individual',
-              );
+              final user = User.fromFirestore(userDoc);
               userCache[userId] = user;
               likes.add(user);
             }
@@ -94,11 +78,8 @@ class PostService {
             .get();
             
         for (var commentDoc in commentsSnapshot.docs) {
-          final commentData = commentDoc.data();
-          commentData['id'] = commentDoc.id;
-          
           // Get comment author
-          final String commentUserId = commentData['userId'];
+          final String commentUserId = commentDoc.data()['userId'];
           User commentUser;
           if (userCache.containsKey(commentUserId)) {
             commentUser = userCache[commentUserId]!;
@@ -106,13 +87,7 @@ class PostService {
             // Fetch user
             final userDoc = await _firestore.collection('users').doc(commentUserId).get();
             if (userDoc.exists) {
-              commentUser = User(
-                id: userDoc.id,
-                name: userDoc.data()?['name'] ?? 'Unknown',
-                imageUrl: userDoc.data()?['imageUrl'],
-                bio: userDoc.data()?['bio'] ?? '',
-                accountType: userDoc.data()?['accountType'] ?? 'individual',
-              );
+              commentUser = User.fromFirestore(userDoc);
               userCache[commentUserId] = commentUser;
             } else {
               // Skip this comment if user not found
@@ -120,11 +95,11 @@ class PostService {
             }
           }
           
-          comments.add(Comment.fromMap(commentData, commentUser));
+          comments.add(Comment.fromFirestore(commentDoc, commentUser));
         }
         
-        // Create post object
-        posts.add(await Post.fromMap(postData, author, likes, comments));
+        // Create post object using the Firestore factory
+        posts.add(Post.fromFirestore(doc, author, likes, comments));
       }
       
       return posts;
@@ -135,14 +110,72 @@ class PostService {
     }
   }
   
+  // Get a single post by ID
+  Future<Post?> getPostById(String postId) async {
+    if (_devMode) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      return MockDataService.getPosts().firstWhere(
+        (post) => post.id == postId, 
+        orElse: () => MockDataService.getPosts().first
+      );
+    }
+    
+    try {
+      final doc = await _firestore.collection(postsCollection).doc(postId).get();
+      if (!doc.exists) return null;
+      
+      // Get author
+      final String authorId = doc.data()?['authorId'];
+      final userDoc = await _firestore.collection('users').doc(authorId).get();
+      if (!userDoc.exists) return null;
+      
+      final author = User.fromFirestore(userDoc);
+      
+      // Get likes
+      List<User> likes = [];
+      final List<dynamic> likeIds = doc.data()?['likeIds'] ?? [];
+      for (String userId in likeIds) {
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          likes.add(User.fromFirestore(userDoc));
+        }
+      }
+      
+      // Get comments
+      List<Comment> comments = [];
+      final commentsSnapshot = await _firestore
+          .collection(postsCollection)
+          .doc(postId)
+          .collection(commentsCollection)
+          .orderBy('createdAt', descending: false)
+          .get();
+          
+      for (var commentDoc in commentsSnapshot.docs) {
+        final String commentUserId = commentDoc.data()['userId'];
+        final userDoc = await _firestore.collection('users').doc(commentUserId).get();
+        if (userDoc.exists) {
+          final commentUser = User.fromFirestore(userDoc);
+          comments.add(Comment.fromFirestore(commentDoc, commentUser));
+        }
+      }
+      
+      return Post.fromFirestore(doc, author, likes, comments);
+    } catch (e) {
+      debugPrint('Error getting post by ID: $e');
+      return null;
+    }
+  }
+  
   // Create new post
   Future<Post?> createPost(User author, String content, {String? imageUrl}) async {
     if (_devMode) {
       // In dev mode, just return a mock post
       await Future.delayed(const Duration(milliseconds: 800));
       
+      final newId = DateTime.now().millisecondsSinceEpoch.toString();
+      
       final newPost = Post(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: newId,
         author: author,
         content: content,
         imageUrl: imageUrl,
@@ -168,11 +201,9 @@ class PostService {
       
       // Fetch the post we just created
       final doc = await docRef.get();
-      final data = doc.data() ?? {};
-      data['id'] = doc.id;
       
       // Return as a Post object
-      return Post.fromMap(data, author, [], []);
+      return Post.fromFirestore(doc, author, [], []);
     } catch (e) {
       debugPrint('Error creating post: $e');
       return null;
@@ -248,34 +279,31 @@ class PostService {
       
       // Get the comment we just added
       final commentDoc = await docRef.get();
-      final data = commentDoc.data() ?? {};
-      data['id'] = commentDoc.id;
       
-      // Return as a Comment object
-      return Comment.fromMap(data, user);
+      return Comment.fromFirestore(commentDoc, user);
     } catch (e) {
       debugPrint('Error adding comment: $e');
       return null;
     }
   }
   
-  // Delete a post (only for post author)
-  Future<bool> deletePost(String postId, String userId) async {
+  // Delete a post
+  Future<bool> deletePost(String postId) async {
     if (_devMode) {
-      // In dev mode, just simulate success
       await Future.delayed(const Duration(milliseconds: 500));
       return true;
     }
     
     try {
-      // Check if user is the author
-      final postDoc = await _firestore.collection(postsCollection).doc(postId).get();
-      if (!postDoc.exists) return false;
-      
-      final authorId = postDoc.data()?['authorId'];
-      if (authorId != userId) {
-        // Not the author, can't delete
-        return false;
+      // Delete all comments first
+      final commentsSnapshot = await _firestore
+          .collection(postsCollection)
+          .doc(postId)
+          .collection(commentsCollection)
+          .get();
+          
+      for (var doc in commentsSnapshot.docs) {
+        await doc.reference.delete();
       }
       
       // Delete the post
