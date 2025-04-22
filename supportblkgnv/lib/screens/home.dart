@@ -114,7 +114,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
-      appBar: CustomAppBar(onChatPressed: _handleChatPressed),
+      appBar: CustomAppBar(
+        onSearchPressed: () {
+          print('🔍 Search icon tapped!');
+          Navigator.pushNamed(context, '/search_users')
+          .then((didChange) {
+            if (didChange == true) {
+              // someone just followed/unfollowed → refresh feed
+              _refreshFeed();
+            }
+          });
+        },
+        onChatPressed: _handleChatPressed,
+      ),
       body: _isLoading 
           ? _buildLoadingIndicator()
           : _buildPostsList(),
@@ -151,11 +163,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   post: _posts[index],
                   onPostUpdated: _updatePost,
                   onProfileTap: (userId) {
-                    Navigator.pushNamed(
-                      context,
-                      '/public_profile',
-                      arguments: userId,
-                    );
+                    Navigator.pushNamed(context, '/public_profile', arguments: userId)
+                    .then((didChange) {
+                      if (didChange == true) {
+                        _refreshFeed();    // or _loadPosts()
+                      }
+                    });
                   },
                 );
               },
