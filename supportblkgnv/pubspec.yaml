@@ -54,6 +54,9 @@ dependencies:
   lottie: ^3.0.0
   image_picker: ^1.1.2
   timeago: ^3.7.0
+  firebase_storage: ^12.4.5
+  uuid: ^3.0.7
+  path: ^1.8.3
 
 dev_dependencies:
   flutter_test:
