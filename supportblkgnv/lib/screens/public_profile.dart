@@ -74,124 +74,151 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBackground,
-      body: FutureBuilder<ProfileData>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No data found.'));
-          }
+@override
+Widget build(BuildContext context) {
+  return FutureBuilder<ProfileData>(
+    future: _profileFuture,
+    builder: (context, snapshot) {
+      // While loading: show a spinner full‑screen
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Scaffold(
+          backgroundColor: AppColors.primaryBackground,
+          body: const Center(child: CircularProgressIndicator()),
+        );
+      }
 
-          final profileData = snapshot.data!;
-          final user = profileData.user;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with profile picture and user info.
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage:
-                          (user.imageUrl ?? '').isNotEmpty
-                              ? NetworkImage(user.imageUrl!)
-                              : null,
-                      backgroundColor: Colors.grey.shade300,
-                      child:
-                          (user.imageUrl ?? '').isEmpty
-                              ? const Icon(Icons.person, size: 40)
-                              : null,
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.name ?? 'No Username',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if ((user.bio ?? '').isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              user.bio!,
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildCountColumn('POSTS', profileData.postCount),
-                    _verticalDivider(),
-                    _buildCountColumn('FOLLOWERS', profileData.followerCount),
-                    _verticalDivider(),
-                    _buildCountColumn('FOLLOWING', profileData.followingCount),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Posts',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: profileData.posts.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 1,
-                  ),
-                  itemBuilder: (context, index) {
-                    final postData =
-                        profileData.posts[index].data() as Map<String, dynamic>;
-                    final postPhotoUrl = postData['imageUrl'] as String;
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(8),
-                        image:
-                            postPhotoUrl.isNotEmpty
-                                ? DecorationImage(
-                                  image: NetworkImage(postPhotoUrl),
-                                  fit: BoxFit.cover,
-                                )
-                                : null,
-                      ),
-                    );
-                  },
-                ),
-              ],
+      // On error or no data: show an AppBar and error message
+      if (snapshot.hasError || !snapshot.hasData) {
+        return Scaffold(
+          backgroundColor: AppColors.primaryBackground,
+          appBar: AppBar(
+            backgroundColor: AppColors.primaryBackground,
+            elevation: 0,
+            automaticallyImplyLeading: true,
+            title: const Text('Profile'),
+          ),
+          body: Center(
+            child: Text(
+              snapshot.error?.toString() ?? 'No data found.',
+              style: const TextStyle(color: Colors.white),
             ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        );
+      }
+
+      // Data has arrived:
+      final profileData = snapshot.data!;
+      final user = profileData.user;
+
+      return Scaffold(
+        backgroundColor: AppColors.primaryBackground,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryBackground,
+          elevation: 0,
+          automaticallyImplyLeading: true,
+          title: Text(user.name ?? 'Profile'),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with profile picture and user info.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundImage: (user.imageUrl ?? '').isNotEmpty
+                        ? NetworkImage(user.imageUrl!)
+                        : null,
+                    backgroundColor: Colors.grey.shade300,
+                    child: (user.imageUrl ?? '').isEmpty
+                        ? const Icon(Icons.person, size: 40)
+                        : null,
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name ?? 'No Username',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if ((user.bio ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            user.bio!,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Stats row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildCountColumn('POSTS', profileData.postCount),
+                  _verticalDivider(),
+                  _buildCountColumn('FOLLOWERS', profileData.followerCount),
+                  _verticalDivider(),
+                  _buildCountColumn('FOLLOWING', profileData.followingCount),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Posts grid
+              const Text(
+                'Posts',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: profileData.posts.length,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1,
+                ),
+                itemBuilder: (context, index) {
+                  final postData =
+                      profileData.posts[index].data() as Map<String, dynamic>;
+                  final postPhotoUrl = postData['imageUrl'] as String;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                      image: postPhotoUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(postPhotoUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 
   Widget _buildCountColumn(String label, int count) {
     return Column(
