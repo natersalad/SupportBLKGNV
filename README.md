@@ -173,7 +173,7 @@ git push origin feature/amazing-idea
 #### Then open a Pull Request
 
 ### 📜 License
-Distributed under the MIT License. See LICENSE for details.
+Distributed under the GNU General Public License. See LICENSE for details.
 
 ### 👥 Authors
 #### Nathan Wand
