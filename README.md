@@ -2,7 +2,7 @@
 
 ![Flutter](https://img.shields.io/badge/flutter-3.7%2B-blue?logo=flutter)
 ![Firebase](https://img.shields.io/badge/firebase-Cloud-orange?logo=firebase)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-GNU-green)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey)
 
 > **SupportBLKGNV** is a cross-platform mobile application built with **Flutter** and **Firebase** that empowers Gainesville’s Black community to connect, discover Black-owned businesses, and measure collective economic impact.  
